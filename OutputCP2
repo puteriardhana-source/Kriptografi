@@ -1,0 +1,42 @@
+E1. AVALANCHE EFFECT
+
+Jumlah percobaan: 1000 (pesan acak 32 byte, seed=2026)
+
+  Fungsi       Rata-rata   Std dev     Min    Maks
+  SHA-256          49.9%      3.2%   39.8%   62.5%
+  hash_lemah        6.5%      4.6%    3.1%   31.2%
+
+Idealnya rata-rata mendekati 50%.
+
+
+E2. COLLISION PADA hash_lemah
+  Transfer Rp1.000.000 ke Budi       hash_lemah = 00000868   SHA-256 = 491e10f6a29d9275109cf0812c7a95f71ebcf28e927e1b71309bb76759743ced
+  Transfer Rp1.000.000 ke iBud       hash_lemah = 00000868   SHA-256 = 630363fe181a5a0af7c5fa72b5115f65426641cd163da2aa436e3dc7b30fbc61
+  Transfer Rp9.000.000 ke Buda       hash_lemah = 00000868   SHA-256 = 36ce027791e63a11601b3f040ff09e55d21d96ff211e493fb8a53a59e9d3924e
+
+  hash_lemah(A) == hash_lemah(B)? True
+  hash_lemah(A) == hash_lemah(C)? True
+  SHA-256(A)    == SHA-256(B)?    False
+
+Dampak: pesan C (nominal diubah jadi 9 juta) lolos verifikasi hash_lemah milik A.
+
+
+E3. COLLISION PADA SHA-256 YANG DIPOTONG (birthday attack)
+
+Pesan dicoba satu per satu ("pesan-0", "pesan-1", ...) sampai ada dua
+pesan berbeda dengan hash terpotong yang sama.
+
+  Panjang hash    Percobaan   Teori ~2^(n/2)  Collision
+         16 bit          289              256  pesan-104 & pesan-288
+         24 bit        3,300            4,096  pesan-1775 & pesan-3299
+         32 bit      143,013           65,536  pesan-7086 & pesan-143012
+         40 bit    1,690,953        1,048,576  pesan-1055517 & pesan-1690952
+
+Untuk SHA-256 penuh (256 bit), butuh sekitar 2^128 percobaan: tidak praktis.
+
+
+RINGKASAN
+  E1: SHA-256 memenuhi avalanche (~50%), hash_lemah gagal.
+  E2: hash_lemah mudah di-collision, bahkan bisa dipakai memalsukan pesan.
+  E3: collision resistance bergantung pada panjang output; hash pendek
+      cepat dipecahkan walau fungsi dasarnya SHA-256.
