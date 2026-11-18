@@ -6,5 +6,5 @@ code :
 output :
 
 Untuk Checkpoint kedua :
-code :
-output : https://github.com/puteriardhana-source/Kriptografi/blob/main/OutputCP2
+\n code :
+\n output : https://github.com/puteriardhana-source/Kriptografi/blob/main/OutputCP2
