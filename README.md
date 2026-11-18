@@ -1,10 +1,10 @@
 # Kriptografi
 Code yang digunakan dalam kelas Kriptografi dan dijelaskan dalam tiap Checkpoint
 
-Untuk Checkpoint pertama :
-code :
+Untuk Checkpoint pertama : <br>
+code : <br>
 output :
 
-Untuk Checkpoint kedua :
-\n code :
-\n output : https://github.com/puteriardhana-source/Kriptografi/blob/main/OutputCP2
+Untuk Checkpoint kedua :<br>
+code : <br>
+output : https://github.com/puteriardhana-source/Kriptografi/blob/main/OutputCP2
