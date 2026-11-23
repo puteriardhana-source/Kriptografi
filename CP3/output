@@ -3,31 +3,31 @@ SIMULASI SECURE CHAT - PKI + X25519 + ECDSA + AES-GCM
 ======================================================================
 [LULUS] 1. Pesan normal Alice<->Bob
         -> diterima: Bob membaca b'Halo Bob, ini rahasia'; Alice membaca b'Halo Alice, diterima'
-[LULUS] 2. Eve menyadap ciphertext
-        -> diterima: Eve hanya melihat ciphertext 687c2149d5ae88356afd475adb1199e2...
-[LULUS] 3. Eve memodifikasi ciphertext
+[LULUS] 2. Casi menyadap ciphertext
+        -> diterima: Casi hanya melihat ciphertext 1255a2243ce115656eacfc5e1ce33693...
+[LULUS] 3. Casi memodifikasi ciphertext
         -> DITOLAK: tag AES-GCM tidak valid (dimodifikasi)
-[LULUS] 4. Eve memodifikasi AAD (seq_no)
+[LULUS] 4. Casi memodifikasi AAD (seq_no)
         -> DITOLAK: tag AES-GCM tidak valid (dimodifikasi)
-[LULUS] 5. Eve me-replay pesan lama
+[LULUS] 5. Casi me-replay pesan lama
         -> DITOLAK: replay/urutan lama (seq=1)
-[LULUS] 6. Eve memantulkan pesan (reflection)
+[LULUS] 6. Casi memantulkan pesan (reflection)
         -> DITOLAK: arah salah (reflection?)
-[LULUS] 7. Eve mengganti EK_A_pub
+[LULUS] 7. Casi mengganti EK_A_pub
         -> DITOLAK: sig_B tidak cocok dengan transkrip Alice (indikasi MITM)
-[LULUS] 8. Eve mengganti EK_B_pub
+[LULUS] 8. Casi mengganti EK_B_pub
         -> DITOLAK: sig_B tidak cocok dengan transkrip Alice (indikasi MITM)
 [LULUS] 9. Cert_B diganti sertifikat dari CA palsu
         -> DITOLAK: tanda tangan CA pada sertifikat tidak valid
-[LULUS] 10. Cert_B diganti sertifikat sah atas nama Eve
-        -> DITOLAK: subject 'Eve' != yang diharapkan 'Bob'
+[LULUS] 10. Cert_B diganti sertifikat sah atas nama Casi
+        -> DITOLAK: subject 'Casi' != yang diharapkan 'Bob'
 [LULUS] 11. Sertifikat kedaluwarsa
         -> DITOLAK: sertifikat di luar masa berlaku
 [LULUS] 12. Sertifikat sudah dicabut (CRL)
         -> DITOLAK: sertifikat sudah dicabut (CRL)
 [LULUS] 13. CRL tidak tersedia (fail-closed)
         -> DITOLAK: CRL tidak tersedia / tanda tangan CRL tidak valid (fail-closed)
-[LULUS] 14. Eve me-replay Hello_B dari sesi lama
+[LULUS] 14. Casi me-replay Hello_B dari sesi lama
         -> DITOLAK: sig_B tidak cocok dengan transkrip Alice (indikasi MITM)
 [LULUS] 15. Titik X25519 berordo kecil (nol)
         -> DITOLAK: shared secret nol (titik berordo kecil)
