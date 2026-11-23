@@ -48,13 +48,13 @@ def x25519_raw(pub) -> bytes:
 class Cert:
     serial: int
     subject: str
-    public_key: bytes      # IK_pub (P-256, uncompressed)
+    public_key: bytes      
     not_before: int
     not_after: int
     key_usage: str
     ca_signature: bytes = b""
 
-    def tbs(self) -> bytes:   # "to be signed"
+    def tbs(self) -> bytes:   
         return encode(self.serial, self.subject, self.public_key,
                       self.not_before, self.not_after, self.key_usage)
     def to_bytes(self) -> bytes:
@@ -126,7 +126,7 @@ def mac(key, label, transcript):
 class Party:
     """Satu kelas untuk Alice (initiator) dan Bob (responder)."""
     def __init__(self, name, peer_name, ca_pub, ca_ref, role, now=None, ik=None, cert=None):
-        self.name, self.peer, self.role = name, peer_name, role   # role: 'A' / 'B'
+        self.name, self.peer, self.role = name, peer_name, role   
         self.ca_pub = ca_pub
         self.now = lambda: int(now if now is not None else time.time())
         self.ik_priv = ik or ec.generate_private_key(ec.SECP256R1())
@@ -156,7 +156,7 @@ class Party:
         self.T1 = sha256(hello_A, hello_B)
         sig_B = self.sig_B = ecdsa_sign(self.ik_priv, encode("responder-sig", self.T1))
         self.keys = derive_keys(self.ek_priv, m1["ek"], self.T1)
-        self.ek_priv = None                                       # hapus SEGERA -> forward secrecy
+        self.ek_priv = None                                       
         return {"hello_B": hello_B, "cert": self.cert, "ek": ek_pub, "nonce": nonce_B,
                 "sig_B": sig_B, "from": self.name, "to": self.peer}
 
@@ -198,9 +198,9 @@ class Party:
     def send(self, plaintext: bytes):
         d_send, _ = self._dirs()
         self.seq_send += 1
-        nonce = bytes(4) + struct.pack(">Q", self.seq_send)       # unik per kunci arah
+        nonce = bytes(4) + struct.pack(">Q", self.seq_send)       
         aad = encode(self.session_id, d_send, self.seq_send)
-        ct = AESGCM(self.keys[d_send]).encrypt(nonce, plaintext, aad)  # ct || tag
+        ct = AESGCM(self.keys[d_send]).encrypt(nonce, plaintext, aad)  
         return {"session_id": self.session_id, "dir": d_send, "seq": self.seq_send, "ct": ct}
 
     def recv(self, pkt):
@@ -208,16 +208,16 @@ class Party:
         if pkt["session_id"] != self.session_id: raise HandshakeError("session_id salah")
         if pkt["dir"] != d_recv:                 raise HandshakeError("arah salah (reflection?)")
         if pkt["seq"] <= self.last_recv:         raise HandshakeError(f"replay/urutan lama (seq={pkt['seq']})")
-        nonce = bytes(4) + struct.pack(">Q", pkt["seq"])          # diturunkan receiver
+        nonce = bytes(4) + struct.pack(">Q", pkt["seq"])          
         aad = encode(self.session_id, d_recv, pkt["seq"])
         try:
             pt = AESGCM(self.keys[d_recv]).decrypt(nonce, pkt["ct"], aad)
         except InvalidTag:
             raise HandshakeError("tag AES-GCM tidak valid (dimodifikasi)")
-        self.last_recv = pkt["seq"]                               # update SETELAH sukses
+        self.last_recv = pkt["seq"]                               
         return pt
 
-# ------------------------------------------------------------------ jaringan + Eve
+# ------------------------------------------------------------------ jaringan + Casi
 def run_handshake(alice, bob, adversary=None):
     """adversary(nama_pesan, msg) -> msg yang diteruskan (Eve bisa mengubah)."""
     adv = adversary or (lambda n, m: m)
@@ -261,7 +261,7 @@ def s_eavesdrop():
     _, A, B = setup(); run_handshake(A, B)
     pkt = A.send(b"rahasia-super")
     assert b"rahasia-super" not in pkt["ct"]
-    return f"Eve hanya melihat ciphertext {pkt['ct'].hex()[:32]}..."
+    return f"Casi hanya melihat ciphertext {pkt['ct'].hex()[:32]}..."
 
 def s_tamper_ct():
     _, A, B = setup(); run_handshake(A, B)
@@ -279,7 +279,7 @@ def s_replay():
 
 def s_reflect():
     _, A, B = setup(); run_handshake(A, B)
-    pkt = A.send(b"halo"); A.recv(pkt)     # Eve memantulkan pesan Alice kembali ke Alice
+    pkt = A.send(b"halo"); A.recv(pkt)     
 
 def s_swap_ekA():
     _, A, B = setup()
@@ -300,18 +300,18 @@ def s_swap_ekB():
 def s_fake_ca_cert():
     ca, A, B = setup()
     fake = CA("EveCA"); eve_ik = ec.generate_private_key(ec.SECP256R1())
-    fake_cert = fake.issue("Bob", eve_ik.public_key(), now=NOW)   # subject 'Bob' tapi CA palsu
+    fake_cert = fake.issue("Bob", eve_ik.public_key(), now=NOW)   
     def adv(n, m):
         if n == "hello_B": m = dict(m); m["cert"] = fake_cert
         return m
     run_handshake(A, B, adv)
 
-def s_eve_legit_cert():
+def s_casi_legit_cert():
     ca, A, B = setup()
-    eve_ik = ec.generate_private_key(ec.SECP256R1())
-    eve_cert = ca.issue("Eve", eve_ik.public_key(), now=NOW)      # sah, tapi atas nama Eve
+    casi_ik = ec.generate_private_key(ec.SECP256R1())
+    casi_cert = ca.issue("Casi", casi_ik.public_key(), now=NOW)      
     def adv(n, m):
-        if n == "hello_B": m = dict(m); m["cert"] = eve_cert
+        if n == "hello_B": m = dict(m); m["cert"] = casi_cert
         return m
     run_handshake(A, B, adv)
 
@@ -334,18 +334,18 @@ def s_replay_old_hello_B():
     ca, A1, B1 = setup(); recorded = {}
     def rec(n, m):
         recorded[n] = m; return m
-    run_handshake(A1, B1, rec)                                    # sesi lama direkam Eve
+    run_handshake(A1, B1, rec)                                    
     _, A2, B2 = setup(ca=ca)
     A2.ca_pub = ca.pub
     A2.cert = A1.cert; A2.ik_priv = A1.ik_priv
     def adv(n, m):
-        return recorded["hello_B"] if n == "hello_B" else m       # replay Hello_B lama
+        return recorded["hello_B"] if n == "hello_B" else m       
     run_handshake(A2, B2, adv)
 
 def s_low_order():
     _, A, B = setup()
     def adv(n, m):
-        if n == "hello_A": m = dict(m); m["ek"] = bytes(32)       # titik berordo kecil
+        if n == "hello_A": m = dict(m); m["ek"] = bytes(32)       
         return m
     run_handshake(A, B, adv)
 
@@ -358,12 +358,10 @@ def s_forward_secrecy():
 def s_ca_swapped():
     """DI LUAR model ancaman: Alice memakai app palsu dengan CA_pub milik Eve."""
     ca, A, B = setup()
-    eve_ca = CA("EveCA"); eve_ik = ec.generate_private_key(ec.SECP256R1())
-    A.ca_pub = eve_ca.pub; A.crl = eve_ca.publish_crl(NOW)
-    eve_cert = eve_ca.issue("Bob", eve_ik.public_key(), now=NOW)
-    # Eve = Bob palsu penuh (ia menjalankan Party 'Bob' dengan kunci & sertifikat dari CA-nya)
-    fake_bob = Party("Bob", "Alice", eve_ca.pub, eve_ca, "B", NOW, eve_ik, eve_cert)
-    # Eve juga perlu memvalidasi Cert_A: dia menerima sertifikat Alice yang asli dari CA asli
+    casi_ca = CA("CasiCA"); casi_ik = ec.generate_private_key(ec.SECP256R1())
+    A.ca_pub = casi_ca.pub; A.crl = casi_ca.publish_crl(NOW)
+    casi_cert = casi_ca.issue("Bob", casi_ik.public_key(), now=NOW)
+    fake_bob = Party("Bob", "Alice", casi_ca.pub, casi_ca, "B", NOW, casi_ik, casi_cert)
     fake_bob.ca_pub = ca.pub; fake_bob.crl = ca.publish_crl(NOW)
     run_handshake(A, fake_bob)
     return "Alice mengira berbicara dengan Bob, padahal Eve (jaminan gugur - sesuai batas di Bab 7)"
@@ -371,19 +369,19 @@ def s_ca_swapped():
 if __name__ == "__main__":
     print("=" * 70, "\nSIMULASI SECURE CHAT - PKI + X25519 + ECDSA + AES-GCM\n" + "=" * 70)
     scenario("1. Pesan normal Alice<->Bob",                      True,  s_normal)
-    scenario("2. Eve menyadap ciphertext",                       True,  s_eavesdrop)
-    scenario("3. Eve memodifikasi ciphertext",                   False, s_tamper_ct)
-    scenario("4. Eve memodifikasi AAD (seq_no)",                 False, s_tamper_aad)
-    scenario("5. Eve me-replay pesan lama",                      False, s_replay)
-    scenario("6. Eve memantulkan pesan (reflection)",            False, s_reflect)
-    scenario("7. Eve mengganti EK_A_pub",                        False, s_swap_ekA)
-    scenario("8. Eve mengganti EK_B_pub",                        False, s_swap_ekB)
+    scenario("2. Casi menyadap ciphertext",                       True,  s_eavesdrop)
+    scenario("3. Casi memodifikasi ciphertext",                   False, s_tamper_ct)
+    scenario("4. Casi memodifikasi AAD (seq_no)",                 False, s_tamper_aad)
+    scenario("5. Casi me-replay pesan lama",                      False, s_replay)
+    scenario("6. Casi memantulkan pesan (reflection)",            False, s_reflect)
+    scenario("7. Casi mengganti EK_A_pub",                        False, s_swap_ekA)
+    scenario("8. Casi mengganti EK_B_pub",                        False, s_swap_ekB)
     scenario("9. Cert_B diganti sertifikat dari CA palsu",       False, s_fake_ca_cert)
-    scenario("10. Cert_B diganti sertifikat sah atas nama Eve",  False, s_eve_legit_cert)
+    scenario("10. Cert_B diganti sertifikat sah atas nama Casi",  False, s_casi_legit_cert)
     scenario("11. Sertifikat kedaluwarsa",                       False, s_expired)
     scenario("12. Sertifikat sudah dicabut (CRL)",               False, s_revoked)
     scenario("13. CRL tidak tersedia (fail-closed)",             False, s_no_crl)
-    scenario("14. Eve me-replay Hello_B dari sesi lama",         False, s_replay_old_hello_B)
+    scenario("14. Casi me-replay Hello_B dari sesi lama",         False, s_replay_old_hello_B)
     scenario("15. Titik X25519 berordo kecil (nol)",             False, s_low_order)
     scenario("16. Forward secrecy: EK_priv terhapus",            True,  s_forward_secrecy)
     scenario("17. [DI LUAR MODEL] CA_pub di aplikasi diganti",   True,  s_ca_swapped)
