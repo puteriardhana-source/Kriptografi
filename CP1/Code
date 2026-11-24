@@ -1,0 +1,88 @@
+from collections import Counter
+
+#Fungsi Enkripsi dari Modul Praktikum
+def viginere_encrypt(plaintext: str, key: str) -> str:
+    """Enkripsi Viginere: c = (p + k) mod 26"""
+    plaintext = [c for c in plaintext.upper() if c.isalpha()]
+    key = [c for c in key.upper() if c.isalpha()]
+    ciphertext = []
+
+    len_key = len(key)
+    for i, c in enumerate(plaintext):
+        p = ord(c) - ord('A')
+        k = ord(key[i % len_key]) - ord('A')
+        c = (p + k) % 26
+        ciphertext.append(chr(c + ord('A')))
+
+    return ''.join(ciphertext)
+
+#Fungsi Deskripsi Deduksi (Kasiski) 
+def kasiski_examination(ciphertext: str, seq_len: int = 3) -> int:
+    """Metode Kasiski untuk menebak panjang kunci Viginere."""
+    clean_text = "".join([c for c in ciphertext.upper() if c.isalpha()])
+    sequences = {}
+
+    for i in range(len(clean_text) - seq_len + 1):
+        seq = clean_text[i:i + seq_len]
+        if seq not in sequences:
+            sequences[seq] = []
+        sequences[seq].append(i)
+
+    gaps = []
+    for seq, positions in sequences.items():
+        if len(positions) > 1:
+            for i in range(len(positions) - 1):
+                seq_gap = [positions[j] - positions[j-1] for j in range(1, len(positions))]
+                gaps.extend(seq_gap)
+
+    if not gaps:
+        return 0
+
+    factor_counts = Counter()
+    for gap in gaps:
+        for factor in range(2, 16):
+            if gap % factor == 0:
+                factor_counts[factor] += 1
+
+    predicted_length = factor_counts.most_common(1)[0][0]
+    return predicted_length
+
+#Fungsi Perhitungan Index of Coincidence
+def calculate_index_of_coincidence(text: str) -> float:
+    """Menghitung Index of Coincidence (IC)"""
+    clean_text = [c for c in text.upper() if c.isalpha()]
+    N = len(clean_text)
+    if N <= 1:
+        return 0.0
+
+    counts = Counter(clean_text)
+    sum_f = sum(f*(f-1)for f in counts.values())
+
+    return sum_f / (N*(N-1))
+
+#Tahap Eksekusi dan Pembuktian
+if __name__ == "__main__":
+    print("=== PEMBUKTIAN SKRIP PEMBONGKARAN VIGINERE ===")
+
+    teks_rahasia = "KRIPTOGRAFIADALAHILMUYANGSANGATMENARIKKARENAKITABISABELAJARCARAMENGAMANKANDATADANJUGACARAMEMBONGKARNYASEPERTIPADAPRAKTIKUMKASISKIINIKITABELAJARESENSIKEAMANAN"
+
+    kunci_rahasia = "KUNCI"
+
+    ciphertext_simulasi = viginere_encrypt(teks_rahasia, kunci_rahasia)
+
+    print(f"Teks Asli (Plaintext): {teks_rahasia}")
+    print(f"Kunci yang Digunakan: {kunci_rahasia} (Panjang: {len(kunci_rahasia)})")
+    print(f"Hasil Enkripsi (Ciphertext): {ciphertext_simulasi}\n")
+
+    print("=== MULAI PROSES PEMBONGKARAN (DEDUKSI) ===")
+
+    ic_value = calculate_index_of_coincidence(ciphertext_simulasi)
+    print(f"Nilai IC terhitung: {ic_value:.4f}")
+    if ic_value < 0.05:
+        print("-> Indikasi: Polialfabetik (Validasi: Ini kemungkinan besar Viginere)")
+
+    tebakan_kunci = kasiski_examination(ciphertext_simulasi)
+    print(f"->Tebakan Panjang Kunci: {tebakan_kunci}")
+
+    if tebakan_kunci == len(kunci_rahasia):
+        print("\n[KESIMPULAN] : PEMBUKTIAN BERHASIL! Skrip berhasil menebak panjang kunci dengan tepat.")
